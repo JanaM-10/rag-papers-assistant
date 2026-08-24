@@ -1,0 +1,22 @@
+# Environment variables (secrets)
+.env
+.env.local
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Data (large, regeneratable — not needed in the repo)
+backend/data/papers/
+backend/data/chroma_db/
+
+# Node / Next.js
+node_modules/
+.next/
+
+# Logs
+eval_log.txt
+
+# Editor
+.vscode/

@@ -1,0 +1,26 @@
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
+@source "../../src/**/*.{js,ts,jsx,tsx,mdx}";
+
+:root {
+  --bg: #03313a;
+  --bg-panel: #04424e;
+  --mint: #8fffe0;
+  --mint-dim: #8fffe033;
+  --text: #eafaf6;
+  --text-dim: #eafaf680;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+.glow-text {
+  text-shadow: 0 0 40px var(--mint-dim);
+}
