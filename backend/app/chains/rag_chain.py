@@ -30,15 +30,23 @@ VECTOR_STORE_PROVIDER = os.getenv("VECTOR_STORE_PROVIDER", "chroma")  # "chroma"
 
 def load_retriever():
     """Reconnects to the existing vector index — local Chroma or cloud Qdrant depending on env."""
-    Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
 
     if VECTOR_STORE_PROVIDER == "qdrant":
+        # Production: use HF's hosted Inference API so we don't load torch/the model
+        # in-process (Render's free tier has a 512MB memory limit)
+        from llama_index.embeddings.huggingface_api import HuggingFaceInferenceAPIEmbedding
+        Settings.embed_model = HuggingFaceInferenceAPIEmbedding(
+            model_name="BAAI/bge-small-en-v1.5",
+            token=os.getenv("HF_TOKEN"),
+        )
         client = qdrant_client.QdrantClient(
             url=os.getenv("QDRANT_URL"),
             api_key=os.getenv("QDRANT_API_KEY"),
         )
         vector_store = QdrantVectorStore(client=client, collection_name=COLLECTION_NAME)
     else:
+        # Local dev: load the model in-process, memory isn't a constraint on your machine
+        Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
         chroma_client = chromadb.PersistentClient(path=str(CHROMA_DIR))
         chroma_collection = chroma_client.get_or_create_collection(COLLECTION_NAME)
         vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
