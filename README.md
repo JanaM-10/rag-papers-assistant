@@ -222,7 +222,3 @@ rag-papers-assistant/
 
 ---
 
-## 👤 Author
-
-**Jana** — Final-year AI student, University of Jordan (KASIT)
-[GitHub](https://github.com/JanaM-10)
