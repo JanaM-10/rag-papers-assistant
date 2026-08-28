@@ -33,11 +33,10 @@
 
 > ⏳ The backend runs on Render's free tier, which spins down after 15 minutes of inactivity. The first request after a period of idle time may take 30–50 seconds to wake up — this is expected, not a bug.
 
-<!-- 📸 Add a screenshot of the empty state here, e.g.: -->
-<!-- ![App screenshot — empty state](./docs/screenshot-empty.png) -->
-
-<!-- 📸 Add a screenshot of a conversation with citations here, e.g.: -->
-<!-- ![App screenshot — conversation](./docs/screenshot-chat.png) -->
+<p align="center">
+  <img src="./docs/screenshot-empty.png" alt="Papers Assistant — empty state with suggested questions" width="48%">
+  <img src="./docs/screenshot-chat.png" alt="Papers Assistant — a grounded, cited answer" width="48%">
+</p>
 
 ---
 
@@ -57,26 +56,27 @@ This isn't a basic "chat with a PDF" demo. It's built as a **production-style sy
 
 ## 🏗️ Architecture
 
-```
-┌─────────────────┐         ┌──────────────────────┐
-│   Next.js UI     │────────▶│   FastAPI Backend      │
-│   (Vercel)       │  HTTPS  │   (Render)             │
-└─────────────────┘         └──────────┬────────────┘
-                                        │
-                     ┌──────────────────┼──────────────────┐
-                     ▼                  ▼                  ▼
-             ┌───────────────┐  ┌──────────────┐  ┌────────────────┐
-             │  LlamaIndex    │  │  LangChain    │  │  LangSmith      │
-             │  (retrieval)   │  │  (chain /      │  │  (tracing /     │
-             │                │  │  orchestration)│  │  observability) │
-             └───────┬───────┘  └──────┬───────┘  └────────────────┘
-                     │                  │
-                     ▼                  ▼
-          ┌────────────────────┐  ┌──────────┐
-          │  Qdrant Cloud        │  │  Groq     │
-          │  (vector store,       │  │  (LLM      │
-          │  production)          │  │  inference)│
-          └────────────────────┘  └──────────┘
+```mermaid
+flowchart TB
+    UI["Next.js Frontend<br/>(Vercel)"] -->|HTTPS| API["FastAPI Backend<br/>(Render)"]
+
+    API --> LI["LlamaIndex<br/>retrieval"]
+    API --> LC["LangChain<br/>chain orchestration"]
+    API -.trace.-> LS["LangSmith<br/>observability"]
+
+    LI --> VDB["Qdrant Cloud<br/>vector store"]
+    LC --> LLM["Groq<br/>LLM inference"]
+
+    VDB -.embeds via.-> HFAPI["HuggingFace<br/>Inference API"]
+
+    style UI fill:#0F0F0F,stroke:#34E0A1,color:#fff
+    style API fill:#0F0F0F,stroke:#34E0A1,color:#fff
+    style LI fill:#1a1a1a,stroke:#666,color:#fff
+    style LC fill:#1a1a1a,stroke:#666,color:#fff
+    style LS fill:#1a1a1a,stroke:#666,color:#fff
+    style VDB fill:#1a1a1a,stroke:#DC244C,color:#fff
+    style LLM fill:#1a1a1a,stroke:#F55036,color:#fff
+    style HFAPI fill:#1a1a1a,stroke:#666,color:#fff
 ```
 
 **Why LlamaIndex *and* LangChain, rather than just one?** Each owns a distinct responsibility instead of overlapping:
@@ -219,6 +219,3 @@ rag-papers-assistant/
 - [ ] Reranking layer to address the context recall gap identified in evaluation
 - [ ] Restrict CORS to the production frontend domain (currently permissive for development convenience)
 - [ ] A companion project applying LangGraph to build genuine agentic behavior (tool use, multi-step reasoning) — kept as a separate repo by design, to keep this project's scope focused on RAG fundamentals
-
----
-
