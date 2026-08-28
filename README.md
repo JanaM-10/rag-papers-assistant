@@ -1,4 +1,4 @@
-# 📚 Papers Assistant
+# Papers Assistant
 
 **A production-style Retrieval-Augmented Generation (RAG) system for querying a curated corpus of AI/ML research papers — with citations, evaluation, and a live public demo.**
 
@@ -27,11 +27,11 @@
 
 ---
 
-## 🔗 Live Demo
+## Live Demo
 
 **[rag-papers-assistant.vercel.app](https://rag-papers-assistant.vercel.app)**
 
-> ⏳ The backend runs on Render's free tier, which spins down after 15 minutes of inactivity. The first request after a period of idle time may take 30–50 seconds to wake up — this is expected, not a bug.
+> The backend runs on Render's free tier, which spins down after 15 minutes of inactivity. The first request after a period of idle time may take 30–50 seconds to wake up — this is expected, not a bug.
 
 <p align="center">
   <img src="./docs/screenshot-empty.png" alt="Papers Assistant — empty state with suggested questions" width="48%">
@@ -40,7 +40,7 @@
 
 ---
 
-## 🧠 What This Is
+## What This Is
 
 Papers Assistant is a RAG chatbot that answers questions grounded in a curated set of **19 AI/ML research papers** spanning retrieval-augmented generation, LLM agents, and fine-tuning. Every answer is traceable back to the specific source documents it was drawn from — the system is explicitly instructed to say "I don't know" rather than hallucinate when the corpus doesn't contain an answer.
 
@@ -50,11 +50,11 @@ This isn't a basic "chat with a PDF" demo. It's built as a **production-style sy
 - Observability via LangSmith tracing
 - A dev/prod split — fully local (Ollama + Chroma) for development, cloud-hosted (Groq + Qdrant Cloud) for the public deployment
 - A custom-built frontend, not a generic Gradio/Streamlit wrapper
-- A genuinely debugged deployment (see [Deployment Notes](#-deployment-notes--what-actually-broke) below — nothing here is theoretical)
+- A genuinely debugged deployment (see [Deployment Notes](#deployment-notes) below — nothing here is theoretical)
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```mermaid
 flowchart TB
@@ -97,7 +97,7 @@ Both paths are controlled by two environment variables (`LLM_PROVIDER`, `VECTOR_
 
 ---
 
-## ✨ Features
+## Features
 
 - **Grounded, cited answers** — every response links back to the specific paper(s) it drew from, with relevance scores
 - **Refuses gracefully** when a question falls outside the corpus, instead of hallucinating
@@ -108,7 +108,7 @@ Both paths are controlled by two environment variables (`LLM_PROVIDER`, `VECTOR_
 
 ---
 
-## 📊 Evaluation
+## Evaluation
 
 Evaluated using [RAGAS](https://github.com/explodinggradients/ragas) across 19 test questions spanning RAG, LLM agents, fine-tuning, and 3 deliberately out-of-corpus "trick" questions (to confirm the system correctly declines to answer rather than hallucinating).
 
@@ -119,24 +119,30 @@ Evaluated using [RAGAS](https://github.com/explodinggradients/ragas) across 19 t
 | **Context Precision** | 0.996 | Of the retrieved chunks, how many were relevant? |
 | **Context Recall** | 0.67 | Did retrieval surface *all* the relevant information available? |
 
-**Honest read on Context Recall (0.67):** this was the one clear weak point. Diagnosis: high precision + moderate recall pointed to *insufficient retrieval breadth* rather than noisy retrieval — the system was pulling accurate but incomplete context for broad conceptual questions (e.g., "What is an LLM agent?"). An attempted fix (raising `top_k` from 5 to 10) was tested locally, but re-measuring it hit a wall: evaluating with a local LLM-as-judge on constrained hardware produced too many timeouts/parse failures to get a reliable second measurement (see below). The fix was reverted in favor of keeping the last *fully verified* configuration, and this is documented here as a known area for future work (candidates: reranking, or re-running the comparison with a cloud-hosted judge model).
+**Honest read on Context Recall (0.67):** this was the one clear weak point. Diagnosis: high precision + moderate recall pointed to *insufficient retrieval breadth* rather than noisy retrieval — the system was pulling accurate but incomplete context for broad conceptual questions (e.g., "What is an LLM agent?"). An attempted fix (raising `top_k` from 5 to 10) was tested locally, but re-measuring it hit a wall: evaluating with a local LLM-as-judge on constrained hardware produced too many timeouts/parse failures to get a reliable second measurement. The fix was reverted in favor of keeping the last *fully verified* configuration, and this is documented here as a known area for future work (candidates: reranking, or re-running the comparison with a cloud-hosted judge model).
 
 This kind of "found a real limitation, tried a fix, hit a genuine constraint, made a documented decision" trail is arguably more representative of real engineering than a suite of clean green checkmarks.
 
 ---
 
-## 🛠️ Deployment Notes — what actually broke
+## Deployment Notes
 
-In the interest of an honest project writeup, here's what deployment actually surfaced (none of this is hypothetical — every item below caused a real failed deploy that had to be diagnosed):
+<details>
+<summary><strong>What actually broke during deployment (click to expand)</strong></summary>
+<br>
+
+In the interest of an honest project writeup, here's what deployment actually surfaced — none of this is hypothetical, every item below caused a real failed deploy that had to be diagnosed:
 
 - **Python version mismatches.** Render's default Python (3.14) was too new for several ML dependencies, and pinning too far back (3.11) broke a different one (`numpy` required ≥3.12). Landed on 3.12 as the version satisfying every dependency's constraints.
 - **Platform-specific dependencies.** A `pip freeze` on Windows captured `pywin32`, a Windows-only package with no Linux equivalent — silently fatal on Render's Linux containers until removed.
 - **Memory ceiling on the free tier.** Render's free tier caps out at 512MB RAM. Loading a HuggingFace embedding model in-process (via `sentence-transformers`/`torch`) alone exceeded that. Solved by moving query-time embeddings to HuggingFace's hosted Inference API in production only — local development still embeds in-process, where memory isn't a constraint.
-- **LangSmith tracing silently failing (403 Forbidden).** Root cause took real diagnosis to find: the account's workspace lives on LangSmith's **EU** infrastructure, while the SDK's default endpoint is **US** — meaning the API key was valid, but every ingest call was hitting the wrong regional endpoint. Fixed with one explicit endpoint override (`LANGSMITH_ENDPOINT`), once correctly diagnosed via testing the same key against each regional endpoint directly.
+- **LangSmith tracing silently failing (403 Forbidden).** Root cause took real diagnosis to find: the account's workspace lives on LangSmith's **EU** infrastructure, while the SDK's default endpoint is **US** — meaning the API key was valid, but every ingest call was hitting the wrong regional endpoint. Fixed with one explicit endpoint override (`LANGSMITH_ENDPOINT`), once correctly diagnosed by testing the same key against each regional endpoint directly.
+
+</details>
 
 ---
 
-## 💻 Tech Stack
+## Tech Stack
 
 **Backend:** Python · FastAPI · LangChain · LlamaIndex · ChromaDB / Qdrant · Ollama / Groq · HuggingFace embeddings
 
@@ -150,7 +156,7 @@ In the interest of an honest project writeup, here's what deployment actually su
 
 ---
 
-## 🚀 Running Locally
+## Running Locally
 
 ### Prerequisites
 - Python 3.12
@@ -196,7 +202,7 @@ Visit `http://localhost:3000`.
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 rag-papers-assistant/
@@ -214,8 +220,15 @@ rag-papers-assistant/
 
 ---
 
-## 🗺️ Roadmap
+## Roadmap
 
 - [ ] Reranking layer to address the context recall gap identified in evaluation
 - [ ] Restrict CORS to the production frontend domain (currently permissive for development convenience)
 - [ ] A companion project applying LangGraph to build genuine agentic behavior (tool use, multi-step reasoning) — kept as a separate repo by design, to keep this project's scope focused on RAG fundamentals
+
+---
+
+## Author
+
+**Jana** — Final-year AI student, University of Jordan (KASIT)
+[GitHub](https://github.com/JanaM-10)
