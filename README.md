@@ -27,7 +27,7 @@
 
 ---
 
-## Live Demo
+## 🔗Live Demo
 
 **[rag-papers-assistant.vercel.app](https://rag-papers-assistant.vercel.app)**
 
@@ -225,10 +225,3 @@ rag-papers-assistant/
 - [ ] Reranking layer to address the context recall gap identified in evaluation
 - [ ] Restrict CORS to the production frontend domain (currently permissive for development convenience)
 - [ ] A companion project applying LangGraph to build genuine agentic behavior (tool use, multi-step reasoning) — kept as a separate repo by design, to keep this project's scope focused on RAG fundamentals
-
----
-
-## Author
-
-**Jana** — Final-year AI student, University of Jordan (KASIT)
-[GitHub](https://github.com/JanaM-10)
